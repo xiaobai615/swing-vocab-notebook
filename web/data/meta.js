@@ -1,0 +1,1 @@
+window.META={"generated_at": "2026-08-18 19:31:27", "dict_total": 34409, "shards": ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"]};

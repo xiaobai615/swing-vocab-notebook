@@ -1,0 +1,13 @@
+Thumbs.db
+Desktop.ini
+.DS_Store
+*.pyc
+__pycache__/
+backup/
+*.db
+*.apk
+data/*.zip
+android-app/.gradle/
+android-app/build/
+android-app/app/build/
+android-app/local.properties

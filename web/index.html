@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>swing 生词本</title>
+<meta name="theme-color" content="#0F766E">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <div class="tb-meta">
+      <span class="tb-date" id="topToday"></span>
+      <span class="tb-title">swing 生词本</span>
+      <span class="tb-streak" id="topStreak"></span>
+    </div>
+  </header>
+
+  <main class="content">
+    <!-- 学习页 -->
+    <section id="view-study" class="view active">
+      <div id="studyHome" class="study-home">
+        <div class="task-card" id="taskCard">
+          <div class="task-kicker">今日待学</div>
+          <div class="task-num" id="taskNum">--</div>
+          <div class="task-label" id="taskDetail"></div>
+        </div>
+        <div class="study-summary hidden" id="studySummary"></div>
+        <button class="btn btn-primary btn-big" id="btnStartStudy">开始学习</button>
+        <button class="btn btn-spell-home" id="btnSpellHome">拼写巩固 · 看中文拼英文</button>
+      </div>
+      <div id="studyCard" class="study-card hidden">
+        <div class="study-progress"><span id="studyProgressText"></span><div class="bar"><div class="bar-fill" id="studyProgressBar"></div></div></div>
+        <div class="word-card flip-card" id="wordCard">
+          <div class="card-inner">
+            <div class="card-face card-front">
+              <div class="word-word" id="cardWord"></div>
+              <div class="word-phonetic" id="cardPhonetic"></div>
+              <button class="speak-btn" id="cardSpeakBtn" data-w="" title="朗读单词" aria-label="朗读单词"><svg viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18 6a8.5 8.5 0 0 1 0 12"/></svg></button>
+              <div class="flip-hint">点击卡片翻开</div>
+            </div>
+            <div class="card-face card-back">
+              <div class="card-back-head">
+                <span class="card-back-word" id="cardBackWord"></span>
+                <span class="stars" id="cardStars"></span>
+              </div>
+              <div class="card-sec"><div class="sec-title">词义</div><div class="sec-body" id="cardTrans"></div></div>
+              <div class="card-sec"><div class="sec-title">例句</div><div class="sec-body" id="cardExample"></div></div>
+              <div class="card-sec"><div class="sec-title">同根词</div><div class="sec-body" id="cardRoots"></div></div>
+              <div class="card-sec"><div class="sec-title">易混淆</div><div class="sec-body" id="cardConf"></div></div>
+            </div>
+          </div>
+        </div>
+        <!-- 选择题 / 例句挖空题型卡 -->
+        <div id="quizCard" class="word-card quiz-card hidden">
+          <div class="quiz-kicker" id="quizKicker"></div>
+          <div class="quiz-word" id="quizWord"></div>
+          <div class="quiz-phonetic" id="quizPhonetic"></div>
+          <div class="quiz-sentence" id="quizSentence"></div>
+          <div class="quiz-hint" id="quizHint"></div>
+          <div class="quiz-options" id="quizOptions"></div>
+          <div class="quiz-feedback hidden" id="quizFeedback"></div>
+          <button class="btn btn-primary btn-big hidden" id="btnQuizNext">下一题 →</button>
+        </div>
+        <div class="grade-row hidden" id="gradeRow">
+          <button class="btn btn-grade grade-know" data-grade="know">认识 ✓</button>
+          <button class="btn btn-grade grade-fuzzy" data-grade="fuzzy">模糊 ⁇</button>
+          <button class="btn btn-grade grade-unknown" data-grade="unknown">不认识 ✗</button>
+        </div>
+        <div class="study-actions">
+          <button class="btn btn-ghost" id="btnStopStudy">退出学习</button>
+        </div>
+      </div>
+
+      <!-- 拼写巩固（看中文拼英文） -->
+      <div id="spellCard" class="spell-card hidden">
+        <div class="study-progress"><span id="spellProgressText"></span><div class="bar"><div class="bar-fill" id="spellProgressBar"></div></div></div>
+        <div class="word-card spell-quiz">
+          <div class="spell-title">看中文，拼出英文单词</div>
+          <div class="spell-cn" id="spellCn"></div>
+          <div class="spell-stars" id="spellStars"></div>
+          <input type="text" id="spellInput" class="spell-input" placeholder="输入英文拼写..." autocomplete="off" autocapitalize="off" spellcheck="false">
+          <div class="spell-feedback hidden" id="spellFeedback"></div>
+          <div class="spell-hint" id="spellHint"></div>
+        </div>
+        <div class="study-actions">
+          <button class="btn btn-primary" id="btnSpellCheck">检查</button>
+          <button class="btn btn-ghost" id="btnSpellQuit">退出</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 词库页 -->
+    <section id="view-list" class="view">
+      <div class="list-head">
+        <input type="search" id="searchBox" class="search" placeholder="搜索单词...">
+        <span class="list-count" id="listCount"></span>
+      </div>
+      <div class="word-list" id="wordList"></div>
+    </section>
+
+    <!-- 收录页（由中央 FAB 打开） -->
+    <section id="view-add" class="view">
+      <div class="add-form">
+        <h3>查词典</h3>
+        <div class="add-row">
+          <input type="text" id="lookupInput" class="search" placeholder="输入单词查看详细释义（不收录）">
+          <button class="btn btn-primary" id="btnLookup">查询</button>
+        </div>
+        <h3>添加生词</h3>
+        <div class="add-row">
+          <input type="text" id="addInput" class="search" placeholder="输入英文单词，回车直接收录">
+          <button class="btn btn-primary" id="btnAdd">收录</button>
+        </div>
+        <h3>批量导入</h3>
+        <textarea id="bulkInput" rows="6" placeholder="每行一个单词，或空格/逗号分隔。例如：&#10;photosynthesis&#10;chlorophyll, pollination"></textarea>
+        <button class="btn btn-primary" id="btnBulk">批量收录</button>
+        <div class="report hidden" id="addReport"></div>
+      </div>
+    </section>
+
+    <!-- 外刊阅读页 -->
+    <section id="view-articles" class="view">
+      <div id="articleRoot"></div>
+    </section>
+
+    <!-- 我的页（统计 + 设置） -->
+    <section id="view-mine" class="view">
+      <div class="mine-sec-title">学习统计</div>
+      <div class="stats-grid" id="statsGrid"></div>
+      <div class="stats-extra" id="statsExtra"></div>
+      <div class="mine-sec-title">学习设置</div>
+      <div class="settings-form">
+        <div class="setting-row"><label>每日新词配额</label><input type="number" id="setQuota" min="5" max="100" value="20"></div>
+        <div class="setting-row"><label>日界时刻（凌晨几点算新的一天）</label><input type="number" id="setBoundary" min="0" max="23" value="4"></div>
+        <div class="setting-row"><label>学习题型混排（选择题 / 例句挖空）</label><input type="checkbox" id="setMixQ" checked></div>
+        <div class="setting-row"><label>外刊匹配阈值（积累几个生词后提示匹配）</label><input type="number" id="setArtThreshold" min="5" max="50" value="10"></div>
+        <div class="setting-row"><label>阅读目标等级（决定推荐收获词的难度上限）</label>
+          <select id="setReadLevel">
+            <option value="cet4">大学四级</option>
+            <option value="cet6" selected>大学六级</option>
+            <option value="kaoyan">考研英语</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" id="btnSaveSettings">保存设置</button>
+      </div>
+      <div class="mine-sec-title">数据</div>
+      <div class="settings-form">
+        <div class="setting-row"><button class="btn btn-ghost" id="btnExportData">导出数据（JSON）</button></div>
+        <div class="setting-row"><button class="btn btn-ghost" id="btnImportData">导入数据</button><input type="file" id="fileImport" accept=".json" hidden></div>
+        <div class="setting-row"><button class="btn btn-ghost" id="btnImportArticles">导入外刊文章（JSON）</button><input type="file" id="fileArticles" accept=".json" hidden></div>
+        <div class="setting-row"><button class="btn btn-danger" id="btnResetData">清空生词本（危险）</button></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- 4+1 导航 -->
+  <nav class="tabbar">
+    <button class="tab active" data-view="study">
+      <svg viewBox="0 0 24 24"><path d="M2 5h7a2 2 0 0 1 2 2v12a2 2 0 0 0-2-2H2zM22 5h-7a2 2 0 0 0-2 2v12a2 2 0 0 1 2-2h7z"/></svg>
+      学习
+    </button>
+    <button class="tab" data-view="list">
+      <svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="1"/><path d="M8 3v18M12 8h5M12 12h5"/></svg>
+      词库
+    </button>
+    <button class="tab-fab" id="tabFab" title="收录新词"><span class="fab">＋</span></button>
+    <button class="tab" data-view="articles">
+      <svg viewBox="0 0 24 24"><path d="M4 5h13v14H6a2 2 0 0 1-2-2z"/><path d="M17 8h3v9a2 2 0 0 1-2 2"/><path d="M7 9h7M7 13h7M7 17h4"/></svg>
+      外刊
+    </button>
+    <button class="tab" data-view="mine">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c1.5-3.5 4-5 7-5s5.5 1.5 7 5"/></svg>
+      我的
+    </button>
+  </nav>
+</div>
+
+<div class="modal hidden" id="modal">
+  <div class="modal-mask" id="modalMask"></div>
+  <div class="modal-body" id="modalBody"></div>
+</div>
+
+<script src="data/meta.js"></script>
+<script src="data/words.js"></script>
+<script src="data/articles1.js"></script>
+<script src="data/articles2.js"></script>
+<script src="data/articles3.js"></script>
+<script src="data/articles4.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

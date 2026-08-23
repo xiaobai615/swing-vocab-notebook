@@ -1,0 +1,19 @@
+{
+  "name": "swing 生词本",
+  "short_name": "swing",
+  "description": "外刊阅读驱动的个人英语生词本：收录、间隔重复复习、看中文拼英文、生词匹配外刊文章",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F4F5F7",
+  "theme_color": "#0F766E",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
