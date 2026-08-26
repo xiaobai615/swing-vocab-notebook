@@ -557,3 +557,14 @@ input, textarea, select { font-family: var(--sans); }
   .modal { align-items: center; }
   .modal-body { border-radius: 16px; max-height: 80vh; }
 }
+
+/* ==================== 云同步 ==================== */
+.sync-tip { font-size: 12.5px; color: var(--ink2); margin: 0 0 8px; }
+.setting-row input[type="text"], .setting-row input[type="password"] {
+  width: 200px; padding: 7px 10px; border: 1px solid var(--line);
+  border-radius: 8px; font-size: 13.5px; background: #fff;
+}
+.setting-row input[type="checkbox"] { width: 18px; height: 18px; }
+.sync-btns { flex-wrap: wrap; gap: 8px; }
+.sync-btns .btn { font-size: 13px; padding: 8px 14px; }
+.sync-status { font-size: 13px; min-height: 18px; margin: 6px 0 0; word-break: break-all; }

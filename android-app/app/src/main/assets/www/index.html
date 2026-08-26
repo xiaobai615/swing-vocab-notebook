@@ -522,22 +522,8 @@ input, textarea, select { font-family: var(--sans); }
 .speak-btn:hover { background: #DFECEA; transform: scale(1.08); }
 .speak-btn:active { transform: scale(.92); }
 .speak-btn.sm { width: 22px; height: 22px; margin-left: 6px; }
-.speak-btn .spk-w { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
-.speak-btn svg { display: block; width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+.speak-btn svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.8; }
 .speak-btn.sm svg { width: 11px; height: 11px; }
-
-/* ---------- 同义词 / 词组 ---------- */
-.syn-item { display: inline-flex; align-items: baseline; gap: 5px; margin-right: 14px; white-space: nowrap; }
-.syn-gloss { font-style: normal; font-size: 11.5px; color: var(--muted); }
-.muted-note { color: var(--muted); font-size: 13px; }
-.phr-wrap { display: flex; flex-wrap: wrap; gap: 8px; }
-.phr-chip {
-  display: inline-flex; align-items: center; gap: 7px;
-  background: var(--acc-soft); border-radius: 14px; padding: 4px 12px;
-  font-size: 13px; cursor: default; line-height: 1.5;
-}
-.phr-chip b { font-weight: 700; color: var(--acc); }
-.phr-chip i { font-style: normal; font-size: 11px; color: var(--muted); }
 
 /* ---------- 前缀联想下拉 ---------- */
 .ac-list {
@@ -558,42 +544,40 @@ input, textarea, select { font-family: var(--sans); }
   #app { max-width: none; flex-direction: row; }
   .topbar { display: none; }
   .tabbar {
-    order: -1; width: 232px; height: 100%; flex-direction: column; align-items: stretch;
-    border-top: none; border-right: 1px solid var(--line); padding: 26px 14px 18px;
+    order: -1; width: 210px; height: 100%; flex-direction: column; align-items: stretch;
+    border-top: none; border-right: 1px solid var(--line); padding: 20px 12px;
   }
   .tabbar::before {
-    content: "swing 生词本"; display: block; font-size: 20px; font-weight: 800;
-    padding: 0 10px 22px; letter-spacing: -.01em;
-  }
-  /* 分组：四个导航项连成一组，收录按钮紧随其后（不再被推到底部分割导航） */
-  .tabbar > .tab[data-view="study"] { order: 1; }
-  .tabbar > .tab[data-view="list"] { order: 2; }
-  .tabbar > .tab[data-view="articles"] { order: 3; }
-  .tabbar > .tab[data-view="mine"] { order: 4; }
-  .tabbar > .tab-fab { order: 5; margin-top: 12px; }
-  .tabbar::after {
-    content: "v1.1 · 离线可用"; order: 9; margin-top: auto; padding: 10px;
-    font-size: 11.5px; color: var(--muted); text-align: center;
+    content: "swing 生词本"; font-size: 18px; font-weight: 800; padding: 0 10px 16px;
+    letter-spacing: -.01em;
   }
   .tab {
-    flex: none; flex-direction: row; justify-content: flex-start; gap: 12px;
-    height: auto; padding: 11px 14px; border-radius: 10px; font-size: 14px;
-    font-weight: 600; color: var(--ink2);
-    transition: background .15s ease, color .15s ease;
+    flex: none; flex-direction: row; justify-content: flex-start; gap: 10px;
+    height: auto; padding: 10px 12px; border-radius: 8px; font-size: 13.5px;
+    font-weight: 600; color: var(--ink2); margin-bottom: 2px;
   }
-  .tab svg { width: 19px; height: 19px; flex-shrink: 0; }
-  .tab:hover { background: var(--sand, #F4F1E9); color: var(--ink); }
-  .tab.active { background: var(--acc-soft); color: var(--acc); font-weight: 700; }
-  .tab-fab { flex: none; height: auto; }
+  .tab.active { background: var(--acc-soft); color: var(--acc); }
+  .tab-fab { flex: none; height: auto; margin-top: auto; }
   .fab {
-    width: 100%; height: 44px; border-radius: 10px; border: none; margin-top: 0;
-    font-size: 14px; font-weight: 700; box-shadow: var(--sh-card);
+    width: 100%; height: 42px; border-radius: 8px; border: none; margin-top: 0;
+    font-size: 14px; font-weight: 700; box-shadow: none;
   }
   .fab::before { content: "收录新词 "; }
-  .content { max-width: 980px; margin: 0 auto; width: 100%; padding: 32px 40px; }
+  .content { max-width: 960px; margin: 0 auto; width: 100%; padding: 28px 32px; }
   .modal { align-items: center; }
   .modal-body { border-radius: 16px; max-height: 80vh; }
 }
+
+/* ==================== 云同步 ==================== */
+.sync-tip { font-size: 12.5px; color: var(--ink2); margin: 0 0 8px; }
+.setting-row input[type="text"], .setting-row input[type="password"] {
+  width: 200px; padding: 7px 10px; border: 1px solid var(--line);
+  border-radius: 8px; font-size: 13.5px; background: #fff;
+}
+.setting-row input[type="checkbox"] { width: 18px; height: 18px; }
+.sync-btns { flex-wrap: wrap; gap: 8px; }
+.sync-btns .btn { font-size: 13px; padding: 8px 14px; }
+.sync-status { font-size: 13px; min-height: 18px; margin: 6px 0 0; word-break: break-all; }
 
 </style>
 </head>
@@ -637,7 +621,7 @@ input, textarea, select { font-family: var(--sans); }
               </div>
               <div class="card-sec"><div class="sec-title">词义</div><div class="sec-body" id="cardTrans"></div></div>
               <div class="card-sec"><div class="sec-title">例句</div><div class="sec-body" id="cardExample"></div></div>
-              <div class="card-sec"><div class="sec-title">同义词</div><div class="sec-body" id="cardRoots"></div></div>
+              <div class="card-sec"><div class="sec-title">同根词</div><div class="sec-body" id="cardRoots"></div></div>
               <div class="card-sec"><div class="sec-title">易混淆</div><div class="sec-body" id="cardConf"></div></div>
             </div>
           </div>
@@ -741,6 +725,22 @@ input, textarea, select { font-family: var(--sans); }
         <div class="setting-row"><button class="btn btn-ghost" id="btnImportData">导入数据</button><input type="file" id="fileImport" accept=".json" hidden></div>
         <div class="setting-row"><button class="btn btn-ghost" id="btnImportArticles">导入外刊文章（JSON）</button><input type="file" id="fileArticles" accept=".json" hidden></div>
         <div class="setting-row"><button class="btn btn-danger" id="btnResetData">清空生词本（危险）</button></div>
+      </div>
+      <div class="mine-sec-title">云同步（双端互通）</div>
+      <div class="settings-form">
+        <p class="sync-tip" id="syncEnvTip"></p>
+        <div class="setting-row"><label>WebDAV 地址</label><input type="text" id="syncUrl" placeholder="https://dav.jianguoyun.com/dav/"></div>
+        <div class="setting-row"><label>坚果云账号（邮箱/手机号）</label><input type="text" id="syncUser" placeholder="you@example.com" autocomplete="off"></div>
+        <div class="setting-row"><label>应用密码（坚果云网页版→安全选项→添加应用）</label><input type="password" id="syncPass" placeholder="********" autocomplete="off"></div>
+        <div class="setting-row"><label>云端文件路径</label><input type="text" id="syncPath" value="swing-vocab/backup.json"></div>
+        <div class="setting-row"><label>自动同步（收录/复习后自动上传）</label><input type="checkbox" id="setSyncAuto" checked></div>
+        <div class="setting-row sync-btns">
+          <button class="btn btn-primary" id="btnSyncSave">保存配置</button>
+          <button class="btn btn-ghost" id="btnSyncTest">测试连接</button>
+          <button class="btn btn-ghost" id="btnSyncUp">↑ 上传备份</button>
+          <button class="btn btn-ghost" id="btnSyncDown">↓ 拉取合并</button>
+        </div>
+        <p class="sync-status" id="syncStatus"></p>
       </div>
     </section>
   </main>
@@ -1051,6 +1051,7 @@ window.ARTICLES.push({"id": "gdn-60", "title": "Black Britain's middle class: th
 
   function save() {
     try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+    scheduleAutoSync(); // 数据变化后防抖自动上传（云同步模块）
   }
 
   // ==================== 工具 ====================
@@ -1482,282 +1483,6 @@ window.ARTICLES.push({"id": "gdn-60", "title": "Black Britain's middle class: th
     return found.slice(0, 8);
   }
 
-  // ==================== 同义词（中文释义互查 + 语素匹配，替换原同根词） ====================
-  var ZH_STOP = {};
-  ["一个","自己","某物","某人","事物","东西","进行","使用","可以","能够","表示","用于","属于",
-   "称为","叫做","有关","相关","用来","具有","拥有","使得","造成","产生","出现","发生","存在",
-   "成为","变成","可能","情况","状态","方式","方法","过程","结果","影响","包括","包含","以及",
-   "尤其","通过","由于","因此","但是","然后","其他","另外","这些","那些","这个","那种","某种",
-   "某些","大量","少量","许多","一些","非常","十分","特别","之间","之一"].forEach(function (w) { ZH_STOP[w] = 1; });
-
-  var ZH_POS_RE = /^(名词|动词|形容词|副词|感叹词|代词|介词|连词|数词|短语|习语|缩写|词组|及物|不及物)\s+/;
-
-  // 从释义文本提取中文核心词（2~8 字连续汉字段），去词性标签与虚词/泛词；
-  // 并过滤碎片化词元（「或事物」「杰出的人」这类描述性残句不是有效词元）
-  function zhGlosses(trans) {
-    var toks = [], seen = {};
-    (trans || "").split("\n").forEach(function (line) {
-      line = line.replace(ZH_POS_RE, "");
-      (line.match(/[\u4e00-\u9fff]{2,8}/g) || []).forEach(function (tk) {
-        if (ZH_STOP[tk] || seen[tk]) return;
-        // 碎片过滤：连接词开头的残句、「的」结尾的长残句（≥4字，如「杰出的人」）不算词元；
-        // 保留「高兴的」这类正常形容词释义
-        if (/^[或之及与的按被向从]/.test(tk) || (/[的]$/.test(tk) && tk.length >= 4)) return;
-        seen[tk] = 1; toks.push(tk);
-      });
-    });
-    return toks;
-  }
-
-  // 全词库只建一次缓存：词 → 释义词元；词元倒排；低频语素字 → 词元索引。
-  // 跨字母分片检索（cure 在 c 分片也能进 treat 的同义词）
-  var SYN_CACHE = null;
-  function synCache() {
-    if (SYN_CACHE) return SYN_CACHE;
-    var g = {}, gFirst = {}, df = {}, tokIdx = {}, charDF = {}, charIdx = {}, n = 0;
-    Object.keys(window.DICT || {}).forEach(function (letter) {
-      var sh = window.DICT[letter] || {};
-      Object.keys(sh).forEach(function (w) {
-        var tks = zhGlosses(sh[w].t);
-        if (!tks.length) return;
-        g[w] = tks; n++;
-        // 首要释义（第一行）词元：严格模式只在此层面匹配，
-        // 避免多义项牵线（如 mountain 习语义「大量」≠ galore「大量」）
-        var nl = sh[w].t.indexOf("\n");
-        gFirst[w] = nl > 0 ? zhGlosses(sh[w].t.slice(0, nl)) : tks;
-        var seenT = {};
-        tks.forEach(function (t) {
-          if (!seenT[t]) {
-            df[t] = (df[t] || 0) + 1;
-            (tokIdx[t] = tokIdx[t] || {})[w] = 1;
-            seenT[t] = 1;
-          }
-          var seenC = {};
-          for (var i = 0; i < t.length; i++) {
-            var ch = t.charAt(i);
-            if (!seenC[ch]) {
-              charDF[ch] = (charDF[ch] || 0) + 1;
-              (charIdx[ch] = charIdx[ch] || {})[w] = 1;
-              seenC[ch] = 1;
-            }
-          }
-        });
-      });
-    });
-    // 全量保留倒排（词元 + 语素字），质量由 IDF 打分压制；
-    // 转数组加速遍历
-    Object.keys(charIdx).forEach(function (ch) { charIdx[ch] = Object.keys(charIdx[ch]); });
-    Object.keys(tokIdx).forEach(function (t) { tokIdx[t] = Object.keys(tokIdx[t]); });
-    return (SYN_CACHE = { g: g, gFirst: gFirst, df: df, n: n, tokIdx: tokIdx, charIdx: charIdx, charDF: charDF });
-  }
-
-  // 同义词（严格模式）：只认「释义词元完全相同」的强匹配 + 常用词种子表。
-  // 共享单个汉字不代表近义（phenomenon「现象」≠ fantasy「幻想」），宁缺毋滥；
-  // 词义独有、无真正近义词的词返回空，界面显示"暂无同义词"。
-  function computeSynonyms(word, trans) {
-    word = (word || "").toLowerCase();
-    var C = synCache();
-    if (!trans) return [];
-    // 源词首要释义词元（第一行）：只在这个层面找近义，多义项不参与
-    var nl = trans.indexOf("\n");
-    var srcToks = zhGlosses(nl > 0 ? trans.slice(0, nl) : trans);
-    if (!srcToks.length) return [];
-    // 候选池：仅整词元倒排（精确共享释义用词）
-    var pool = {};
-    srcToks.forEach(function (t) {
-      if (C.tokIdx[t]) C.tokIdx[t].forEach(function (w) { if (w !== word) pool[w] = 1; });
-    });
-    var hits = {};
-    function addHit(w, score, isStrong, gloss) {
-      if (!hits[w]) hits[w] = { w: w, s: 0, strong: 0, g: gloss || "" };
-      hits[w].s += score;
-      if (isStrong) hits[w].strong = 1;
-      if (gloss && !hits[w].g) hits[w].g = gloss;
-    }
-    var bestGloss = {};
-    Object.keys(pool).forEach(function (cand) {
-      // 严格模式：候选词的首要释义也必须含同一词元（双方主释义互证）
-      var tk = C.gFirst[cand];
-      if (!tk || !tk.length) return;
-      var strong = 0, matched = 0;
-      for (var i = 0; i < tk.length; i++) {
-        var tok = tk[i];
-        if (srcToks.indexOf(tok) >= 0) {
-          matched++;
-          // 强匹配取最强共享词元（不累加：防多义项词靠词条数堆分）
-          var idf = Math.max(2, Math.min(Math.round((C.n / (C.df[tok] || 1)) * 2), 150));
-          if (idf > strong) strong = idf;
-          if (!bestGloss[cand]) bestGloss[cand] = { g: tok, idf: idf }; // 标签取首个共享词元
-        }
-      }
-      // 释义重合度：候选首要释义至少 60% 词元与源词共享
-      // （挡掉只沾一个类别词的领域词，如 monitor 之于 computer）
-      if (matched / tk.length < 0.6) return;
-      // 义项数归一化：多义词（of/go 有几十个义项）天然被压制
-      var div = Math.log(2 + tk.length) / Math.LN2;
-      if (strong > 0) addHit(cand, strong / div, true, bestGloss[cand] ? bestGloss[cand].g : "");
-    });
-    var list = Object.keys(hits).map(function (k) {
-      var h = hits[k];
-      // 星级加成只放大强匹配，防止高频泛词靠星级挤掉真近义词
-      if (h.strong) {
-        var own = (window.DICT[letterOf(k)] || {})[k];
-        h.s += ((own && own.c) || 0) * 3;
-      }
-      return h;
-    }).filter(function (h) { return h.s >= 20; }) // 最低质量门槛：泛词元匹配直接淘汰
-      .sort(function (a, b) { return b.s - a.s; });
-    var out = [];
-    for (var j = 0; j < list.length && out.length < 8; j++) {
-      // 剔除拼写过于相近的形近词（那是"易混淆"的职责）
-      if (dlDistance(list[j].w, word, 2) <= 2 && Math.abs(list[j].w.length - word.length) <= 2) continue;
-      out.push({ word: list[j].w, gloss: list[j].g });
-    }
-    // 种子近义表合并：置顶插入（挤掉尾部），保证高频核心近义词始终可见
-    var seeds = SYN_SEED[word];
-    if (seeds) {
-      var have = {}, merged = [];
-      for (var s3 = 0; s3 < seeds.length && merged.length < 8; s3++) {
-        var sw = seeds[s3], row2 = ((window.DICT[letterOf(sw)] || {})[sw]);
-        if (!row2 || sw === word) continue;
-        have[sw] = 1;
-        var g2 = zhGlosses(row2.t);
-        merged.push({ word: sw, gloss: g2[0] || "" });
-      }
-      for (var j3 = 0; j3 < list.length && merged.length < 8; j3++) {
-        var h2 = list[j3];
-        // 剔除拼写过于相近的形近词（那是"易混淆"的职责）
-        if (dlDistance(h2.w, word, 2) <= 2 && Math.abs(h2.w.length - word.length) <= 2) continue;
-        if (!have[h2.w]) { have[h2.w] = 1; merged.push({ word: h2.w, gloss: h2.g }); }
-      }
-      return merged;
-    }
-    return out;
-  }
-
-  // 常用词种子近义表：释义措辞差异过大时算法不可达的高频近义词（如 cure↔treat）
-  var SYN_SEED = {
-    treat: ["cure", "heal", "remedy"], cure: ["treat", "heal", "remedy"], heal: ["cure", "treat", "recover", "mend"],
-    remedy: ["cure", "treat"], big: ["large", "huge", "enormous", "vast", "immense", "gigantic"],
-    fantasy: ["daydream", "illusion"], illusion: ["fantasy", "delusion"], daydream: ["fantasy", "reverie"],
-    large: ["big", "huge", "enormous"], small: ["little", "tiny", "minor"], little: ["small", "tiny"],
-    happy: ["glad", "delighted", "cheerful", "joyful"], glad: ["happy", "pleased", "delighted"],
-    sad: ["unhappy", "sorrowful", "gloomy"], angry: ["mad", "furious", "annoyed", "cross"],
-    afraid: ["scared", "frightened", "fearful"], help: ["assist", "aid", "support"],
-    assist: ["help", "aid"], aid: ["help", "assist"],
-    hurt: ["injure", "wound", "harm"], injure: ["hurt", "wound", "harm"],
-    damage: ["harm", "impair", "wreck"], destroy: ["ruin", "devastate", "wreck", "demolish"],
-    ruin: ["destroy", "devastate"], smart: ["clever", "bright", "wise"], clever: ["smart", "bright"],
-    fast: ["quick", "rapid", "swift"], quick: ["fast", "rapid"], tired: ["exhausted", "weary", "sleepy"],
-    important: ["significant", "vital", "crucial"], vital: ["crucial", "essential", "important"],
-    crucial: ["vital", "critical", "important"], beautiful: ["pretty", "lovely", "gorgeous"],
-    begin: ["start", "commence"], start: ["begin", "commence"], end: ["finish", "conclude", "stop"],
-    finish: ["end", "complete", "conclude"], buy: ["purchase"], purchase: ["buy"],
-    teach: ["instruct", "educate"], learn: ["study"],
-    speak: ["talk", "say", "tell"], talk: ["speak", "chat"], walk: ["stroll"],
-    job: ["work", "occupation", "career"], work: ["job", "labor"],
-    doctor: ["physician"], disease: ["illness", "sickness"], illness: ["disease", "sickness"],
-    fix: ["repair", "mend"], repair: ["fix", "mend"],
-    ask: ["inquire", "request"], answer: ["reply", "respond"], reply: ["answer", "respond"],
-    get: ["obtain", "acquire", "gain"], obtain: ["get", "acquire"],
-    give: ["provide", "offer", "grant"], provide: ["give", "supply", "offer"],
-    make: ["create", "produce"], create: ["make", "produce"],
-    think: ["believe", "consider", "suppose"], show: ["demonstrate", "display", "reveal"],
-    find: ["discover", "locate"], discover: ["find", "detect"],
-    keep: ["hold", "retain", "preserve"], allow: ["permit", "let"], permit: ["allow", "let"],
-    maybe: ["perhaps", "possibly"], perhaps: ["maybe", "possibly"]
-  };
-
-  function synonymsHtml(syns) {
-    if (!syns || !syns.length) return '<span class="muted-note">暂无同义词</span>';
-    return syns.map(function (s) {
-      return '<span class="syn-item"><a class="root-link" href="javascript:void(0)" ' +
-        'onclick="window.openWordDetail(\'' + linkify(s.word) + '\')">' + esc(s.word) + "</a>" +
-        (s.gloss ? '<i class="syn-gloss">' + esc(s.gloss) + "</i>" : "") + "</span>";
-    }).join(" ");
-  }
-
-  // ==================== 词组（从例句库 + 外刊语料挖掘真实搭配） ====================
-  var PHR_CORPUS = null;
-  function phraseCorpus() {
-    if (PHR_CORPUS) return PHR_CORPUS;
-    var parts = [];
-    Object.keys(window.DICT || {}).forEach(function (l) {
-      var sh = window.DICT[l] || {};
-      Object.keys(sh).forEach(function (w) { if (sh[w].e) parts.push(sh[w].e); });
-    });
-    (window.ARTICLES || []).forEach(function (a) { if (a.content) parts.push(a.content); });
-    PHR_CORPUS = parts.join(" ").toLowerCase().replace(/\u2019/g, "'");
-    return PHR_CORPUS;
-  }
-
-  var PHR_PREPS = "with as of to in on for from about into over after against between by at up out down off back through without across".split(" ");
-  // 介词常用义（词组翻译用）
-  var PHR_PREP_T = {
-    with: "与…；用", as: "作为；把…看作", of: "…的；关于", to: "向；对",
-    in: "在…里；以", on: "在…上；关于", for: "为了；给", from: "从；来自",
-    about: "关于", into: "进入；变成", over: "在…上方；超过", after: "在…之后；追赶",
-    against: "反对；倚靠", between: "在…之间", by: "通过；被；在旁", at: "在（某点）",
-    up: "向上；完全地", out: "出去；熄灭", down: "向下；减弱", off: "离开；关掉",
-    back: "回原处；支持", through: "穿过；经由", without: "没有", across: "穿过；在对面"
-  };
-  var PHR_RESULT = {}; // 结果缓存
-  function computePhrases(word) {
-    if (PHR_RESULT[word]) return PHR_RESULT[word];
-    var forms = {};
-    [word, word + "s", word + "es", word + "ed", word + "d", word + "ing",
-     word.replace(/y$/, "ies"), word.length > 2 ? word.slice(0, -1) : ""]
-      .forEach(function (f) { if (f) forms[f] = 1; });
-    var alt = Object.keys(forms).map(function (f) {
-      return f.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    }).join("|");
-    var re = new RegExp("\\b(?:" + alt + ")\\s+([a-z]+)", "g");
-    var corpus = phraseCorpus();
-    var counts = {}, sample = {}, m;
-    while ((m = re.exec(corpus))) {
-      var p = m[1];
-      if (PHR_PREPS.indexOf(p) < 0) continue;
-      counts[p] = (counts[p] || 0) + 1;
-      if (!sample[p]) {
-        var st = corpus.lastIndexOf(".", m.index);
-        var en = corpus.indexOf(".", m.index + m[0].length);
-        sample[p] = corpus.slice(st + 1, en < 0 ? st + 160 : en).trim().slice(0, 130);
-      }
-    }
-    var out = Object.keys(counts)
-      .sort(function (a, b) { return counts[b] - counts[a]; })
-      .slice(0, 6)
-      .map(function (p) { return { prep: p, n: counts[p], eg: sample[p] }; });
-    return (PHR_RESULT[word] = out);
-  }
-
-  function phrasesHtml(word, phrs) {
-    if (!phrs || !phrs.length) return "";
-    // 单词本义：扫前 8 行释义，按出现频次高、字数少挑 3 个核心词
-    // （兼顾高频义项，如 deal 的「处理」而非只显示首义的「发牌」）
-    var row = (window.DICT[letterOf(word)] || {})[word];
-    var wg = "";
-    if (row && row.t) {
-      var phrCnt = {}, phrOrder = [];
-      row.t.split("\n").slice(0, 8).forEach(function (ln) {
-        zhGlosses(ln).forEach(function (t) {
-          if (!phrCnt[t]) { phrCnt[t] = 0; phrOrder.push(t); }
-          phrCnt[t]++;
-        });
-      });
-      wg = phrOrder.slice().sort(function (a, b) {
-        return (phrCnt[b] - phrCnt[a]) || (a.length - b.length);
-      }).slice(0, 3).join("；");
-    }
-    return phrs.map(function (p) {
-      var pt = PHR_PREP_T[p.prep] || "";
-      var zh = [pt, wg].filter(Boolean).join(" · ");
-      return '<span class="phr-chip" title="' + escAttr(p.eg || "") + '"><b>' +
-        esc(word) + " " + esc(p.prep) + "</b>" +
-        "<i>" + esc(zh) + " · 语料 ×" + p.n + "</i></span>";
-    }).join("");
-  }
-
   // ==================== 卡片渲染 ====================
   // 释义行拆分：先剥 POS 代码，再按首个空格切 [词性, 释义]；无空格整行视为释义
   function splitTrans(trans) {
@@ -1819,22 +1544,20 @@ window.ARTICLES.push({"id": "gdn-60", "title": "Black Britain's middle class: th
             transHtml(row.translation) + "</div></div>";
     html += '<div class="card-sec"><div class="sec-title">例句</div><div class="sec-body">' +
             esc(row.example || "暂无例句") + "</div></div>";
-    html += '<div class="card-sec"><div class="sec-title">同义词</div><div class="sec-body">' +
-            synonymsHtml(computeSynonyms(row.word, row.translation,
-              window.DICT[letterOf(row.word)] || {})) + "</div></div>";
+    html += '<div class="card-sec"><div class="sec-title">同根词</div><div class="sec-body">' +
+            rootsHtml(row.roots) + "</div></div>";
     html += '<div class="card-sec"><div class="sec-title">易混淆</div><div class="sec-body">' +
             confsHtml(row.confusables) + "</div></div>";
     return html;
   }
 
-  // 词典详情内容（查词弹窗与点击跳转共用）：音标/词义/词组/例句/同义词/易混淆（均可点击跳转）
+  // 词典详情内容（查词弹窗与点击跳转共用）：音标/词义/例句/同根词/易混淆（均可点击跳转）
   function renderDictDetail(word, d) {
     var ph = d.p || "";
     if (ph && ph.charAt(0) !== "/") ph = "/" + ph + "/";
     var stars = d.c || 0;
     var shard = window.DICT[letterOf(word)] || {};
-    var syns = computeSynonyms(word, d.t || "", shard);
-    var phrs = computePhrases(word);
+    var roots = d.r || computeRoots(word, shard);
     var conf = d.x || computeConfusables(word, shard);
     return '<div class="word-card detail-card">' +
       '<div class="word-front"><div class="word-word">' + esc(word) +
@@ -1844,12 +1567,10 @@ window.ARTICLES.push({"id": "gdn-60", "title": "Black Britain's middle class: th
       '<div class="word-back">' +
       '<div class="card-sec"><div class="sec-title">词义</div><div class="sec-body">' +
       transHtml(d.t) + "</div></div>" +
-      (phrs.length ? '<div class="card-sec"><div class="sec-title">词组</div><div class="sec-body"><div class="phr-wrap">' +
-        phrasesHtml(word, phrs) + "</div></div></div>" : "") +
       '<div class="card-sec"><div class="sec-title">例句</div><div class="sec-body">' +
       esc(d.e || "暂无例句") + "</div></div>" +
-      '<div class="card-sec"><div class="sec-title">同义词</div><div class="sec-body">' +
-      synonymsHtml(syns) + "</div></div>" +
+      '<div class="card-sec"><div class="sec-title">同根词</div><div class="sec-body">' +
+      rootsHtml(roots) + "</div></div>" +
       '<div class="card-sec"><div class="sec-title">易混淆</div><div class="sec-body">' +
       confsHtml(conf) + "</div></div>" +
       "</div></div>";
@@ -2015,8 +1736,7 @@ window.ARTICLES.push({"id": "gdn-60", "title": "Black Britain's middle class: th
     $("#cardBackWord").textContent = row.word;
     $("#cardTrans").innerHTML = transHtml(row.translation);
     $("#cardExample").textContent = row.example || "暂无例句";
-    $("#cardRoots").innerHTML = synonymsHtml(computeSynonyms(row.word, row.translation,
-      window.DICT[letterOf(row.word)] || {}));
+    $("#cardRoots").innerHTML = rootsHtml(row.roots);
     $("#cardConf").innerHTML = confsHtml(row.confusables);
     var stars = row.collins || 0;
     $("#cardStars").textContent = stars ? "★".repeat(stars) : "";
@@ -3299,6 +3019,192 @@ window.ARTICLES.push({"id": "gdn-60", "title": "Black Britain's middle class: th
       navigator.serviceWorker.register("./sw.js").catch(function () {});
     }
   }
+
+  // ==================== 云同步（坚果云 WebDAV） ====================
+  var SYNC_KEY = "vocab-web-sync-v1";
+  var SYNC = { url: "https://dav.jianguoyun.com/dav/", user: "", pass: "",
+               path: "swing-vocab/backup.json", auto: true };
+  (function () {
+    try {
+      var s = JSON.parse(localStorage.getItem(SYNC_KEY) || "{}");
+      for (var k in SYNC) if (s[k] !== undefined) SYNC[k] = s[k];
+    } catch (e) {}
+  })();
+  function saveSyncCfg() {
+    try { localStorage.setItem(SYNC_KEY, JSON.stringify(SYNC)); } catch (e) {}
+  }
+  function syncReady() { return !!(SYNC.user && SYNC.pass && SYNC.path); }
+
+  // PC 浏览器受 CORS 限制（坚果云不支持跨域），本地助手托管页面时走代理；
+  // APK WebView 开启了 UniversalAccess，file:// 下可直连
+  function useProxy() {
+    return location.protocol === "http:" &&
+      (location.hostname === "localhost" || location.hostname === "127.0.0.1");
+  }
+
+  function davRequest(method, body, extraHeaders) {
+    var base = (SYNC.url || "https://dav.jianguoyun.com/dav/").replace(/\/?$/, "/");
+    var path = (SYNC.path || "").replace(/^\/+/, "");
+    var full = base + path;
+    if (useProxy()) {
+      return fetch("/dav-proxy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ method: method, url: full, user: SYNC.user,
+          pass: SYNC.pass, headers: extraHeaders || null,
+          body64: body ? btoa(unescape(encodeURIComponent(body))) : null })
+      }).then(function (r) { return r.json(); }).then(function (j) {
+        if (!j.ok) throw new Error(j.error || ("HTTP " + j.status));
+        return { status: j.status,
+                 text: j.body64 ? decodeURIComponent(escape(atob(j.body64))) : "" };
+      });
+    }
+    var hdrs = { "Authorization": "Basic " +
+      btoa(unescape(encodeURIComponent(SYNC.user + ":" + SYNC.pass))) };
+    if (extraHeaders) for (var k in extraHeaders) hdrs[k] = extraHeaders[k];
+    return fetch(full, {
+      method: method,
+      headers: hdrs,
+      body: body
+    }).then(function (r) {
+      return r.text().then(function (t) { return { status: r.status, text: t }; });
+    });
+  }
+
+  function syncStatus(msg, isErr) {
+    var el = $("#syncStatus");
+    if (!el) return;
+    el.textContent = msg;
+    el.style.color = isErr ? "#C0392B" : "#0F766E";
+  }
+
+  function entryScore(e) {
+    return (e.last_reviewed || e.added_at || "0000") + "#" +
+      ("00000" + (e.total_reviews || 0)).slice(-6);
+  }
+
+  // 智能合并：生词条逐词「新版本胜出」，复习记录/文章做并集
+  function mergeState(remote) {
+    var added = 0, updated = 0;
+    Object.keys(remote.notebook || {}).forEach(function (w) {
+      var r = remote.notebook[w], l = state.notebook[w];
+      if (!l) { state.notebook[w] = r; added++; }
+      else if (entryScore(r) > entryScore(l)) { state.notebook[w] = r; updated++; }
+    });
+    var seen = {};
+    state.log.forEach(function (x) {
+      seen[(x.word || "") + "|" + (x.at || "") + "|" + (x.grade || "")] = 1;
+    });
+    var logAdd = 0;
+    (remote.log || []).forEach(function (x) {
+      var k = (x.word || "") + "|" + (x.at || "") + "|" + (x.grade || "");
+      if (!seen[k]) { state.log.push(x); logAdd++; }
+    });
+    var ids = {};
+    (state.articles || []).forEach(function (a) { if (a) ids[a.id] = 1; });
+    var artAdd = 0;
+    (remote.articles || []).forEach(function (a) {
+      if (a && a.id && !ids[a.id]) { state.articles.push(a); artAdd++; }
+    });
+    ART_INDEX = null;
+    save();
+    refreshAll();
+    return { added: added, updated: updated, logAdd: logAdd, artAdd: artAdd };
+  }
+
+  function cloudUpload(silent) {
+    if (!syncReady()) { if (!silent) syncStatus("请先填写同步配置", true); return; }
+    if (!silent) syncStatus("上传中...");
+    var payload = JSON.stringify({ app: "swing-vocab", ver: 2,
+      exported_at: new Date().toISOString(), state: state });
+    var doPut = function () {
+      return davRequest("PUT", payload).then(function (r) {
+        if (r.status >= 300) throw new Error("HTTP " + r.status +
+          (r.status === 401 ? "（账号或应用密码错误）" : ""));
+        syncStatus("✓ 已上传（" + Object.keys(state.notebook).length + " 词）" +
+          new Date().toLocaleTimeString("zh-CN", { hour12: false }));
+      });
+    };
+    // 首次上传时父目录不存在会返回 409/404，先建目录再重试一次
+    return doPut().catch(function (e1) {
+      var code = String(e1.message);
+      if (code.indexOf("409") < 0 && code.indexOf("404") < 0) throw e1;
+      var bak = SYNC.path;
+      SYNC.path = bak.replace(/^\/+/, "").split("/").slice(0, -1).join("/");
+      return davRequest("MKCOL").catch(function () {})
+        .then(function () { SYNC.path = bak; return doPut(); })
+        .catch(function (e2) { SYNC.path = bak; throw e2; });
+    }).catch(function (e) {
+      syncStatus("上传失败：" + e.message + (useProxy() ? "" : "（PC 端请用同步助手打开）"), true);
+    });
+  }
+
+  function cloudDownload(silent) {
+    if (!syncReady()) { if (!silent) syncStatus("请先填写同步配置", true); return; }
+    if (!silent) syncStatus("拉取中...");
+    return davRequest("GET").then(function (r) {
+      if (r.status === 404) { syncStatus("云端还没有备份文件"); return; }
+      var data = JSON.parse(r.text);
+      var remote = data.state || data;
+      if (!remote.notebook) throw new Error("格式不正确");
+      var m = mergeState(remote);
+      syncStatus("✓ 已合并：新增 " + m.added + " 词，更新 " + m.updated +
+        " 词；复习记录 +" + m.logAdd + "，文章 +" + m.artAdd);
+    }).catch(function (e) {
+      syncStatus("拉取失败：" + e.message + (useProxy() ? "" : "（PC 端请用同步助手打开）"), true);
+    });
+  }
+
+  function cloudTest() {
+    if (!syncReady()) { syncStatus("请先填写账号与应用密码", true); return; }
+    syncStatus("测试连接中...");
+    davRequest("PROPFIND", '<?xml version="1.0"?><D:propfind xmlns:D="DAV:"><D:prop><D:resourcetype/></D:prop></D:propfind>', { "Depth": "0" })
+      .then(function (r) {
+        if (r.status === 404) { syncStatus("✓ 连接正常，云端目录将在首次上传时创建"); return; }
+        if (r.status < 300) { syncStatus("✓ 连接正常，已找到云端备份"); return; }
+        throw new Error("HTTP " + r.status + (r.status===401?"（账号或应用密码错误）":""));
+      }).catch(function (e) {
+        syncStatus("连接失败：" + e.message + (useProxy() ? "" : "（PC 端请用同步助手打开）"), true);
+      });
+  }
+
+  function loadSyncUI() {
+    $("#syncUrl").value = SYNC.url;
+    $("#syncUser").value = SYNC.user;
+    $("#syncPass").value = SYNC.pass;
+    $("#syncPath").value = SYNC.path;
+    $("#setSyncAuto").checked = SYNC.auto !== false;
+    if (useProxy()) $("#syncEnvTip").textContent = "当前环境：本地助手代理模式（PC）";
+    else if (location.protocol === "file:") $("#syncEnvTip").textContent = "当前环境：App 直连模式";
+    else $("#syncEnvTip").textContent = "⚠ 当前环境无法直连 WebDAV（CORS），请双击 start_sync.bat 用助手打开";
+  }
+
+  function bindSync() {
+    $("#btnSyncSave").addEventListener("click", function () {
+      SYNC.url = $("#syncUrl").value.trim() || SYNC.url;
+      SYNC.user = $("#syncUser").value.trim();
+      SYNC.pass = $("#syncPass").value.trim();
+      SYNC.path = $("#syncPath").value.trim().replace(/^\/+/, "");
+      SYNC.auto = $("#setSyncAuto").checked;
+      saveSyncCfg();
+      syncStatus("配置已保存" + (SYNC.user ? "，可点击「测试连接」验证" : ""));
+    });
+    $("#btnSyncTest").addEventListener("click", cloudTest);
+    $("#btnSyncUp").addEventListener("click", function () { cloudUpload(false); });
+    $("#btnSyncDown").addEventListener("click", function () { cloudDownload(false); });
+  }
+
+  // 自动同步防抖：数据变化 5 秒后静默上传
+  var _syncTimer = null;
+  function scheduleAutoSync() {
+    if (!SYNC || !SYNC.auto || !syncReady()) return;
+    clearTimeout(_syncTimer);
+    _syncTimer = setTimeout(function () { cloudUpload(true); }, 5000);
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    bindSync();
+  });
 
   document.addEventListener("DOMContentLoaded", init);
 })();

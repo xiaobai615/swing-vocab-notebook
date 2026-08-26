@@ -143,6 +143,7 @@
 
   function save() {
     try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+    scheduleAutoSync(); // 数据变化后防抖自动上传（云同步模块）
   }
 
   // ==================== 工具 ====================
@@ -2110,6 +2111,192 @@
       navigator.serviceWorker.register("./sw.js").catch(function () {});
     }
   }
+
+  // ==================== 云同步（坚果云 WebDAV） ====================
+  var SYNC_KEY = "vocab-web-sync-v1";
+  var SYNC = { url: "https://dav.jianguoyun.com/dav/", user: "", pass: "",
+               path: "swing-vocab/backup.json", auto: true };
+  (function () {
+    try {
+      var s = JSON.parse(localStorage.getItem(SYNC_KEY) || "{}");
+      for (var k in SYNC) if (s[k] !== undefined) SYNC[k] = s[k];
+    } catch (e) {}
+  })();
+  function saveSyncCfg() {
+    try { localStorage.setItem(SYNC_KEY, JSON.stringify(SYNC)); } catch (e) {}
+  }
+  function syncReady() { return !!(SYNC.user && SYNC.pass && SYNC.path); }
+
+  // PC 浏览器受 CORS 限制（坚果云不支持跨域），本地助手托管页面时走代理；
+  // APK WebView 开启了 UniversalAccess，file:// 下可直连
+  function useProxy() {
+    return location.protocol === "http:" &&
+      (location.hostname === "localhost" || location.hostname === "127.0.0.1");
+  }
+
+  function davRequest(method, body, extraHeaders) {
+    var base = (SYNC.url || "https://dav.jianguoyun.com/dav/").replace(/\/?$/, "/");
+    var path = (SYNC.path || "").replace(/^\/+/, "");
+    var full = base + path;
+    if (useProxy()) {
+      return fetch("/dav-proxy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ method: method, url: full, user: SYNC.user,
+          pass: SYNC.pass, headers: extraHeaders || null,
+          body64: body ? btoa(unescape(encodeURIComponent(body))) : null })
+      }).then(function (r) { return r.json(); }).then(function (j) {
+        if (!j.ok) throw new Error(j.error || ("HTTP " + j.status));
+        return { status: j.status,
+                 text: j.body64 ? decodeURIComponent(escape(atob(j.body64))) : "" };
+      });
+    }
+    var hdrs = { "Authorization": "Basic " +
+      btoa(unescape(encodeURIComponent(SYNC.user + ":" + SYNC.pass))) };
+    if (extraHeaders) for (var k in extraHeaders) hdrs[k] = extraHeaders[k];
+    return fetch(full, {
+      method: method,
+      headers: hdrs,
+      body: body
+    }).then(function (r) {
+      return r.text().then(function (t) { return { status: r.status, text: t }; });
+    });
+  }
+
+  function syncStatus(msg, isErr) {
+    var el = $("#syncStatus");
+    if (!el) return;
+    el.textContent = msg;
+    el.style.color = isErr ? "#C0392B" : "#0F766E";
+  }
+
+  function entryScore(e) {
+    return (e.last_reviewed || e.added_at || "0000") + "#" +
+      ("00000" + (e.total_reviews || 0)).slice(-6);
+  }
+
+  // 智能合并：生词条逐词「新版本胜出」，复习记录/文章做并集
+  function mergeState(remote) {
+    var added = 0, updated = 0;
+    Object.keys(remote.notebook || {}).forEach(function (w) {
+      var r = remote.notebook[w], l = state.notebook[w];
+      if (!l) { state.notebook[w] = r; added++; }
+      else if (entryScore(r) > entryScore(l)) { state.notebook[w] = r; updated++; }
+    });
+    var seen = {};
+    state.log.forEach(function (x) {
+      seen[(x.word || "") + "|" + (x.at || "") + "|" + (x.grade || "")] = 1;
+    });
+    var logAdd = 0;
+    (remote.log || []).forEach(function (x) {
+      var k = (x.word || "") + "|" + (x.at || "") + "|" + (x.grade || "");
+      if (!seen[k]) { state.log.push(x); logAdd++; }
+    });
+    var ids = {};
+    (state.articles || []).forEach(function (a) { if (a) ids[a.id] = 1; });
+    var artAdd = 0;
+    (remote.articles || []).forEach(function (a) {
+      if (a && a.id && !ids[a.id]) { state.articles.push(a); artAdd++; }
+    });
+    ART_INDEX = null;
+    save();
+    refreshAll();
+    return { added: added, updated: updated, logAdd: logAdd, artAdd: artAdd };
+  }
+
+  function cloudUpload(silent) {
+    if (!syncReady()) { if (!silent) syncStatus("请先填写同步配置", true); return; }
+    if (!silent) syncStatus("上传中...");
+    var payload = JSON.stringify({ app: "swing-vocab", ver: 2,
+      exported_at: new Date().toISOString(), state: state });
+    var doPut = function () {
+      return davRequest("PUT", payload).then(function (r) {
+        if (r.status >= 300) throw new Error("HTTP " + r.status +
+          (r.status === 401 ? "（账号或应用密码错误）" : ""));
+        syncStatus("✓ 已上传（" + Object.keys(state.notebook).length + " 词）" +
+          new Date().toLocaleTimeString("zh-CN", { hour12: false }));
+      });
+    };
+    // 首次上传时父目录不存在会返回 409/404，先建目录再重试一次
+    return doPut().catch(function (e1) {
+      var code = String(e1.message);
+      if (code.indexOf("409") < 0 && code.indexOf("404") < 0) throw e1;
+      var bak = SYNC.path;
+      SYNC.path = bak.replace(/^\/+/, "").split("/").slice(0, -1).join("/");
+      return davRequest("MKCOL").catch(function () {})
+        .then(function () { SYNC.path = bak; return doPut(); })
+        .catch(function (e2) { SYNC.path = bak; throw e2; });
+    }).catch(function (e) {
+      syncStatus("上传失败：" + e.message + (useProxy() ? "" : "（PC 端请用同步助手打开）"), true);
+    });
+  }
+
+  function cloudDownload(silent) {
+    if (!syncReady()) { if (!silent) syncStatus("请先填写同步配置", true); return; }
+    if (!silent) syncStatus("拉取中...");
+    return davRequest("GET").then(function (r) {
+      if (r.status === 404) { syncStatus("云端还没有备份文件"); return; }
+      var data = JSON.parse(r.text);
+      var remote = data.state || data;
+      if (!remote.notebook) throw new Error("格式不正确");
+      var m = mergeState(remote);
+      syncStatus("✓ 已合并：新增 " + m.added + " 词，更新 " + m.updated +
+        " 词；复习记录 +" + m.logAdd + "，文章 +" + m.artAdd);
+    }).catch(function (e) {
+      syncStatus("拉取失败：" + e.message + (useProxy() ? "" : "（PC 端请用同步助手打开）"), true);
+    });
+  }
+
+  function cloudTest() {
+    if (!syncReady()) { syncStatus("请先填写账号与应用密码", true); return; }
+    syncStatus("测试连接中...");
+    davRequest("PROPFIND", '<?xml version="1.0"?><D:propfind xmlns:D="DAV:"><D:prop><D:resourcetype/></D:prop></D:propfind>', { "Depth": "0" })
+      .then(function (r) {
+        if (r.status === 404) { syncStatus("✓ 连接正常，云端目录将在首次上传时创建"); return; }
+        if (r.status < 300) { syncStatus("✓ 连接正常，已找到云端备份"); return; }
+        throw new Error("HTTP " + r.status + (r.status===401?"（账号或应用密码错误）":""));
+      }).catch(function (e) {
+        syncStatus("连接失败：" + e.message + (useProxy() ? "" : "（PC 端请用同步助手打开）"), true);
+      });
+  }
+
+  function loadSyncUI() {
+    $("#syncUrl").value = SYNC.url;
+    $("#syncUser").value = SYNC.user;
+    $("#syncPass").value = SYNC.pass;
+    $("#syncPath").value = SYNC.path;
+    $("#setSyncAuto").checked = SYNC.auto !== false;
+    if (useProxy()) $("#syncEnvTip").textContent = "当前环境：本地助手代理模式（PC）";
+    else if (location.protocol === "file:") $("#syncEnvTip").textContent = "当前环境：App 直连模式";
+    else $("#syncEnvTip").textContent = "⚠ 当前环境无法直连 WebDAV（CORS），请双击 start_sync.bat 用助手打开";
+  }
+
+  function bindSync() {
+    $("#btnSyncSave").addEventListener("click", function () {
+      SYNC.url = $("#syncUrl").value.trim() || SYNC.url;
+      SYNC.user = $("#syncUser").value.trim();
+      SYNC.pass = $("#syncPass").value.trim();
+      SYNC.path = $("#syncPath").value.trim().replace(/^\/+/, "");
+      SYNC.auto = $("#setSyncAuto").checked;
+      saveSyncCfg();
+      syncStatus("配置已保存" + (SYNC.user ? "，可点击「测试连接」验证" : ""));
+    });
+    $("#btnSyncTest").addEventListener("click", cloudTest);
+    $("#btnSyncUp").addEventListener("click", function () { cloudUpload(false); });
+    $("#btnSyncDown").addEventListener("click", function () { cloudDownload(false); });
+  }
+
+  // 自动同步防抖：数据变化 5 秒后静默上传
+  var _syncTimer = null;
+  function scheduleAutoSync() {
+    if (!SYNC || !SYNC.auto || !syncReady()) return;
+    clearTimeout(_syncTimer);
+    _syncTimer = setTimeout(function () { cloudUpload(true); }, 5000);
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    bindSync();
+  });
 
   document.addEventListener("DOMContentLoaded", init);
 })();

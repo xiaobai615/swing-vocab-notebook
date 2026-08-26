@@ -154,6 +154,22 @@
         <div class="setting-row"><button class="btn btn-ghost" id="btnImportArticles">导入外刊文章（JSON）</button><input type="file" id="fileArticles" accept=".json" hidden></div>
         <div class="setting-row"><button class="btn btn-danger" id="btnResetData">清空生词本（危险）</button></div>
       </div>
+      <div class="mine-sec-title">云同步（双端互通）</div>
+      <div class="settings-form">
+        <p class="sync-tip" id="syncEnvTip"></p>
+        <div class="setting-row"><label>WebDAV 地址</label><input type="text" id="syncUrl" placeholder="https://dav.jianguoyun.com/dav/"></div>
+        <div class="setting-row"><label>坚果云账号（邮箱/手机号）</label><input type="text" id="syncUser" placeholder="you@example.com" autocomplete="off"></div>
+        <div class="setting-row"><label>应用密码（坚果云网页版→安全选项→添加应用）</label><input type="password" id="syncPass" placeholder="********" autocomplete="off"></div>
+        <div class="setting-row"><label>云端文件路径</label><input type="text" id="syncPath" value="swing-vocab/backup.json"></div>
+        <div class="setting-row"><label>自动同步（收录/复习后自动上传）</label><input type="checkbox" id="setSyncAuto" checked></div>
+        <div class="setting-row sync-btns">
+          <button class="btn btn-primary" id="btnSyncSave">保存配置</button>
+          <button class="btn btn-ghost" id="btnSyncTest">测试连接</button>
+          <button class="btn btn-ghost" id="btnSyncUp">↑ 上传备份</button>
+          <button class="btn btn-ghost" id="btnSyncDown">↓ 拉取合并</button>
+        </div>
+        <p class="sync-status" id="syncStatus"></p>
+      </div>
     </section>
   </main>
 
