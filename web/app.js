@@ -80,9 +80,61 @@
   // 兜底剥离行首全大写英文 POS 代码（N-COUNT / PHR-MODAL / VERB 等）
   var POS_STRIP = /^[A-Z][A-Z-]{1,14}\s+/;
 
+  // 已知 POS/词性标签集合（大小写不敏感，用于行首剥离）
+  // 覆盖 ECDICT 中常见的全写/缩写/含连字符/复合形式
+  var POS_LABELS = {
+    n:1, v:1, vt:1, vi:1, adj:1, adv:1, prep:1, conj:1, pron:1, interj:1,
+    art:1, num:1, aux:1, int:1, abbr:1, pl:1, sg:1, vbl:1, c:1, t:1, d:1,
+    "aux.":1, "abbr.":1, "vbl.":1,
+    noun:1, verb:1, adjective:1, adverb:1, preposition:1, conjunction:1,
+    pronoun:1, interjection:1, article:1, numeral:1, auxiliary:1,
+    "linking verb":1, "modal verb":1, "phrasal verb":1,
+    "transitive verb":1, "intransitive verb":1,
+    "past tense":1, "past participle":1, "present participle":1,
+    "plural":1, "singular":1, "comparative":1, "superlative":1,
+    "see also":1, "short for":1,
+    // 词性+次类组合（柯林斯字典常见前缀）
+    "n-count":1, "n-count.":1, "n-counts":1,
+    "n-uncount":1, "n-uncount.":1, "n-uncounts":1,
+    "n-sing":1, "n-plur":1, "n-mass":1,
+    "v-int":1, "v-tr":1, "v-t":1, "v-i":1,
+    "phr-v":1, "phr-v.":1, "phr-modal":1, "phr-mod":1,
+    "adj-comp":1, "adj-comp.":1, "adj-super":1, "adj-super.":1,
+    "n-count-pl":1, "n-singular":1, "n-plural":1,
+    "v-pass":1, "v-active":1,
+    // 中文词性（ECDICT 中文翻译常用前缀）
+    "动词":1, "形容词":1, "副词":1, "名词":1, "介词":1, "连词":1,
+    "代词":1, "冠词":1, "数词":1, "助词":1, "叹词":1, "感叹词":1,
+    "量词":1, "拟声词":1, "前缀":1, "后缀":1, "词缀":1, "缩写":1,
+    "及物动词":1, "不及物动词":1, "及物":1, "不及物":1,
+    "助动词":1, "情态动词":1, "系动词":1
+  };
+
+  // 剥除每一行开头的 POS 标记（最多连续剥 2 个 token，如 "linking verb"）
   function stripPosLines(trans) {
-    return (trans || "").split("\n").map(function (l) {
-      return l.replace(POS_STRIP, "").trim();
+    // 中英文 POS 标签都支持；regex 用 Unicode 转义覆盖汉字（U+4E00-U+9FFF）
+    var RE_TOK = /^(\s*)([\u4e00-\u9fffA-Za-z][\u4e00-\u9fffA-Za-z\-]*\.?)/;
+    return (trans || "").split("\n").map(function (line) {
+      var s = line;
+      for (var i = 0; i < 2; i++) {
+        var m = s.match(RE_TOK);
+        if (!m) break;
+        var tok = m[2].toLowerCase().replace(/\.$/, "");
+        // 复合标签（两个 token）：如 "linking verb"—— 探查 "前两 token 是否在白名单"
+        if (i === 0) {
+          var probe = s.match(/^\s*([\u4e00-\u9fffA-Za-z][\u4e00-\u9fffA-Za-z\-]*)\s+([\u4e00-\u9fffA-Za-z][\u4e00-\u9fffA-Za-z\-]*\.?)/);
+          if (probe) {
+            var pair = (probe[1] + " " + probe[2]).toLowerCase().replace(/\.$/, "");
+            if (POS_LABELS[pair]) {
+              s = s.slice(probe[0].length);
+              continue;
+            }
+          }
+        }
+        if (POS_LABELS[tok]) s = s.slice(m[0].length);
+        else break;
+      }
+      return s.trim();
     }).filter(function (l) { return l; }).join("\n");
   }
 
@@ -234,6 +286,7 @@
   }
 
   // ==================== 学习会话（主队列 + 复现队列） ====================
+  // 每日无上限，按 10 个一组自动切批；复现词穿插其中
   function buildDailyQueue() {
     var today = todayStr();
     var due = [], nw = [];
@@ -244,36 +297,55 @@
       else if (r.status === "NEW") nw.push(r);
     });
     due.sort(function (a, b) { return a.next_review < b.next_review ? -1 : 1; });
-    return due.concat(nw.slice(0, state.settings.newQuota));
+    return due.concat(nw);
   }
 
   function Session() {
-    this.main = buildDailyQueue();
-    this.pending = {};       // word -> {row, dueAt}
+    var all = buildDailyQueue();
+    this.batches = [];
+    for (var i = 0; i < all.length; i += 10) this.batches.push(all.slice(i, i + 10));
+    this.batchIdx = 0;
+    this.main = this.batches[0] || [];
+    this.pending = {};           // word -> {row, dueAt}
     this.requeueCount = {};
     this.served = 0;
     this.current = null;
+    this.pendingGrade = null;    // 自评暂存，等选择题后再落定
+    this.fromPending = false;
     this.results = { know: 0, fuzzy: 0, unknown: 0 };
-    this.servedWords = [];   // 本次会话出过的词（拼写巩固题库）
-    this.total = this.main.length + Object.keys(this.pending).length;
+    this.servedWords = [];
+    this.totalAll = all.length;
+    this.batchSize = this.main.length;
   }
   Session.prototype.nextWord = function () {
     var self = this;
     for (var w in this.pending) {
       if (this.served >= this.pending[w].dueAt) {
         var it = this.pending[w]; delete this.pending[w];
-        this.current = it.row; this.fromPending = true; this.servedWords.push(it.row.word);
+        this.current = it.row; this.fromPending = true;
+        this.servedWords.push(it.row.word);
         return this.current;
       }
     }
     if (this.main.length) {
       this.current = this.main.shift(); this.served += 1;
-      this.fromPending = false; this.servedWords.push(this.current.word);
+      this.fromPending = false;
+      this.servedWords.push(this.current.word);
       return this.current;
     }
+    // 当前批空了 → 自动进入下一批
+    if (this.batchIdx + 1 < this.batches.length) {
+      this.batchIdx++;
+      this.main = this.batches[this.batchIdx];
+      this.batchSize = this.main.length;
+      this.served = 0;
+      return this.nextWord();
+    }
+    // 残留 pending 也尝试出
     for (var w2 in this.pending) {
       var it2 = this.pending[w2]; delete this.pending[w2];
-      this.current = it2.row; this.fromPending = true; this.servedWords.push(it2.row.word);
+      this.current = it2.row; this.fromPending = true;
+      this.servedWords.push(it2.row.word);
       return this.current;
     }
     this.current = null; return null;
@@ -576,11 +648,12 @@
   }
 
   // ==================== 卡片渲染 ====================
-  // 释义行拆分：先剥 POS 代码，再按首个空格切 [词性, 释义]；无空格整行视为释义
+  // 释义行拆分：先剥 POS 代码（用增强规则），再按首个空格切 [词性, 释义]；无空格整行视为释义
   function splitTrans(trans) {
     var lines = [];
-    (trans || "").split("\n").forEach(function (line) {
-      line = line.replace(POS_STRIP, "").trim();
+    (trans || "").split("\n").forEach(function (rawLine) {
+      // 用 stripPosLines 处理单行
+      var line = stripPosLines(rawLine).trim();
       if (!line) return;
       var sp = line.indexOf(" ");
       if (sp > 0) {
@@ -701,7 +774,7 @@
 
   function startStudy() {
     session = new Session();
-    if (!session.total) {
+    if (!session.batches.length) {
       alert("今日没有任务，先添加一些生词吧！");
       session = null;
       return;
@@ -814,22 +887,40 @@
 
   function updateStudyProgress() {
     if (!session) return;
-    var done = session.total - session.remaining();
-    $("#studyProgressText").textContent = done + "/" + session.total;
-    $("#studyProgressBar").style.width = (done / session.total * 100) + "%";
+    var batchSize = session.batches[session.batchIdx] ? session.batches[session.batchIdx].length : 0;
+    var batchDone = batchSize - session.main.length;
+    $("#studyProgressText").textContent = batchDone + "/" + batchSize;
+    $("#studyProgressBar").style.width = (batchSize ? batchDone / batchSize * 100 : 0) + "%";
+    var totalBatch = session.batches.length;
+    if (totalBatch > 1) {
+      $("#studyBatchText").textContent = " · 第 " + (session.batchIdx + 1) + " 批 / 共 " + totalBatch + " 批（每批 10 词）";
+    } else {
+      $("#studyBatchText").textContent = " · 共 " + batchSize + " 词";
+    }
   }
 
   function fillWordCard(row) {
-    var ph = row.phonetic || "";
-    if (ph && ph.charAt(0) !== "/") ph = "/" + ph + "/";
+    var ph = (row.phonetic || "").trim();
+    var phDisplay = ph ? (ph.charAt(0) === "/" ? ph : "/" + ph + "/") : "暂无音标";
     $("#cardWord").textContent = row.word;
-    $("#cardPhonetic").textContent = ph;
+    $("#cardPhonetic").textContent = phDisplay;
+    $("#cardPhonetic").classList.toggle("no-phonetic", !ph);
     $("#cardSpeakBtn").setAttribute("data-w", row.word);
     $("#cardBackWord").textContent = row.word;
-    $("#cardTrans").innerHTML = transHtml(row.translation);
+    var bp = $("#cardBackPhonetic");
+    if (bp) {
+      bp.textContent = phDisplay;
+      bp.classList.toggle("no-phonetic", !ph);
+    }
+    var bs = $("#cardBackSpeakBtn");
+    if (bs) bs.setAttribute("data-w", row.word);
+    $("#cardTrans").innerHTML = transHtml(row.translation) ||
+      '<span class="no-phonetic">（此词暂无中文释义，可在「查词典」面板手动补充）</span>';
     $("#cardExample").textContent = row.example || "暂无例句";
-    $("#cardRoots").innerHTML = rootsHtml(row.roots);
-    $("#cardConf").innerHTML = confsHtml(row.confusables);
+    $("#cardRoots").innerHTML = rootsHtml(row.roots) ||
+      '<span class="no-phonetic">（暂无同根词数据）</span>';
+    $("#cardConf").innerHTML = confsHtml(row.confusables) ||
+      '<span class="no-phonetic">（暂无易混淆词数据）</span>';
     var stars = row.collins || 0;
     $("#cardStars").textContent = stars ? "★".repeat(stars) : "";
   }
@@ -901,22 +992,10 @@
     $("#btnQuizNext").classList.add("hidden");
   }
 
-  // 客观题作答后：自动评分（对=认识 / 错=不认识），翻面展示完整词条
+  // 巩固题作答：选对保留自评，选错降级为不认识
   function answerQuiz(row, correct) {
-    var grade = correct ? "know" : "unknown";
-    applyGrade(row.word, grade, todayStr());
-    session.submitGrade(grade);
-    fillWordCard(row);
-    var card = $("#wordCard");
-    card.classList.remove("hidden");
-    card.classList.add("flipped");
-    var fb = $("#quizFeedback");
-    fb.classList.remove("hidden");
-    fb.className = "quiz-feedback " + (correct ? "ok" : "no");
-    fb.textContent = correct ? "✓ 回答正确，已记为「认识」"
-                             : "✗ 回答错误，已记为「不认识」，稍后会再出现";
-    $("#btnQuizNext").classList.remove("hidden");
-    fb.scrollIntoView({ block: "nearest" });
+    var selfGrade = session ? session.pendingGrade : "fuzzy";
+    finalizeWithQuiz(row, selfGrade, correct);
   }
 
   function nextCard() {
@@ -926,17 +1005,8 @@
       finishStudy();
       return;
     }
-    var type = decideQType(row, session.fromPending);
-    if (type === "flip") {
-      renderFlip(row);
-      return;
-    }
-    loadShard(letterOf(row.word), function () {
-      if (!session || session.current !== row) return; // 会话已结束/切换
-      var q = type === "choice" ? buildChoice(row) : buildCloze(row);
-      if (q) renderQuiz(row, q);
-      else renderFlip(row); // 干扰项凑不齐时回退翻卡
-    });
+    // 新流程：先翻面自评，再做选择题客观检验
+    renderFlip(row);
   }
 
   function reveal() {
@@ -947,10 +1017,48 @@
 
   function submitGrade(grade) {
     if (!session || !session.current) return;
-    var today = todayStr();
-    applyGrade(session.current.word, grade, today);
-    session.submitGrade(grade);
-    nextCard();
+    // 不立即落定分数，先暂存自评，进入选择题环节做客观确认
+    session.pendingGrade = grade;
+    $("#gradeRow").classList.add("hidden");
+    showFollowUpQuiz(session.current, grade);
+  }
+
+  function gradeLabel(g) {
+    return g === "know" ? "认识" : g === "fuzzy" ? "模糊" : "不认识";
+  }
+
+  // 翻面自评后的巩固选择题（看英文选词义）
+  function showFollowUpQuiz(row, selfGrade) {
+    loadShard(letterOf(row.word), function () {
+      if (!session || session.current !== row) return;
+      var q = buildChoice(row);
+      if (!q) {
+        // 凑不出选择题，直接接受自评分数
+        finalizeWithQuiz(row, selfGrade, true);
+        return;
+      }
+      renderQuiz(row, q);
+      $("#quizKicker").textContent = "巩固题（你刚自评「" + gradeLabel(selfGrade) + "」）";
+    });
+  }
+
+  // 选择题作答：客观检验；选对则保留自评，选错则降级为"不认识"
+  function finalizeWithQuiz(row, selfGrade, quizCorrect) {
+    var finalGrade = quizCorrect ? selfGrade : "unknown";
+    applyGrade(row.word, finalGrade, todayStr());
+    session.submitGrade(finalGrade);
+    fillWordCard(row);
+    var card = $("#wordCard");
+    card.classList.remove("hidden");
+    card.classList.add("flipped");
+    var fb = $("#quizFeedback");
+    fb.classList.remove("hidden");
+    fb.className = "quiz-feedback " + (quizCorrect ? "ok" : "no");
+    fb.innerHTML = quizCorrect
+      ? "✓ 巩固正确（自评「" + gradeLabel(selfGrade) + "」）"
+      : "✗ 巩固出错，已记为「不认识」";
+    $("#btnQuizNext").classList.remove("hidden");
+    fb.scrollIntoView({ block: "nearest" });
   }
 
   function showStudySummary(title, detail) {
@@ -961,12 +1069,13 @@
 
   function finishStudy() {
     var r = session.results;
-    var done = session.total;
+    var done = session.totalAll;
+    var totalBatches = session.batches.length;
     session = null;
     $("#studyCard").classList.add("hidden");
     $("#studyHome").classList.remove("hidden");
     refreshStudyHome();
-    showStudySummary("本次完成 " + done + " 词",
+    showStudySummary("本次完成 " + done + " 词" + (totalBatches > 1 ? "（" + totalBatches + " 组）" : ""),
       "认识 " + r.know + " · 模糊 " + r.fuzzy + " · 不认识 " + r.unknown);
     refreshList(); refreshStats();
   }
@@ -980,7 +1089,8 @@
   }
 
   // ==================== 拼写巩固（看中文拼英文） ====================
-  var spell = null; // {queue, idx, correct, wrong, checked}
+  // 规则：错的单词要拼对为止（最多 5 次），通过后计入完成
+  var spell = null; // {queue, idx, correct, wrong, done, attempts, checked}
 
   function todaySpellWords() {
     var today = todayStr();
@@ -1002,11 +1112,107 @@
       alert("暂无可用单词：先学完一批生词再来拼写巩固吧！");
       return;
     }
-    spell = { queue: list, idx: 0, correct: 0, wrong: 0, checked: false };
+    spell = {
+      queue: list.slice(), idx: 0, correct: 0, wrong: 0,
+      done: {}, attempts: {}, checked: false
+    };
     $("#studyHome").classList.add("hidden");
     $("#studyCard").classList.add("hidden");
     $("#spellCard").classList.remove("hidden");
     spellNext();
+  }
+
+  function spellDoneCount() {
+    return Object.keys(spell.done).length;
+  }
+
+  function spellNext() {
+    var s = spell;
+    if (!s) return;
+    // 跳过已完成的
+    while (s.idx < s.queue.length && s.done[s.queue[s.idx]]) {
+      s.idx++;
+    }
+    if (s.idx >= s.queue.length) {
+      spellFinish();
+      return;
+    }
+    var row = state.notebook[s.queue[s.idx]];
+    $("#spellCn").textContent = transText(row.translation) || "暂无释义";
+    var stars = row.collins || 0;
+    $("#spellStars").textContent = stars ? "★".repeat(stars) : "";
+    $("#spellFeedback").classList.add("hidden");
+    $("#spellFeedback").className = "spell-feedback hidden";
+    $("#spellHint").textContent = "";
+    var inp = $("#spellInput");
+    inp.value = ""; inp.classList.remove("correct", "wrong"); inp.disabled = false;
+    $("#btnSpellCheck").textContent = "检查";
+    $("#btnSpellCheck").className = "btn btn-primary";
+    s.checked = false;
+    var done = spellDoneCount();
+    $("#spellProgressText").textContent = done + "/" + s.queue.length;
+    $("#spellProgressBar").style.width = (s.queue.length ? done / s.queue.length * 100 : 0) + "%";
+    setTimeout(function () { inp.focus(); }, 60);
+  }
+
+  function checkSpell() {
+    if (!spell) return;
+    var s = spell;
+    var target = s.queue[s.idx];
+    var answer = ($("#spellInput").value || "").trim().toLowerCase();
+    var fb = $("#spellFeedback");
+
+    // 已通过本题 → 「下一题」按钮触发
+    if (s.checked) {
+      var inp = $("#spellInput");
+      inp.disabled = false; inp.classList.remove("correct", "wrong");
+      s.checked = false; spellNext();
+      return;
+    }
+
+    if (answer === target) {
+      s.correct += 1;
+      if (!s.attempts[target]) s.correctFirstTry = (s.correctFirstTry || 0) + 1;
+      s.done[target] = 1;
+      $("#spellInput").classList.add("correct");
+      $("#spellInput").disabled = true;
+      $("#btnSpellCheck").textContent = "下一题 →";
+      $("#btnSpellCheck").className = "btn btn-primary";
+      fb.classList.remove("hidden");
+      fb.className = "spell-feedback fb-ok";
+      fb.innerHTML = "✓ 拼写正确！";
+      s.checked = true;
+      // 即时更新进度
+      var done = spellDoneCount();
+      $("#spellProgressText").textContent = done + "/" + s.queue.length;
+      $("#spellProgressBar").style.width = (s.queue.length ? done / s.queue.length * 100 : 0) + "%";
+    } else {
+      s.wrong += 1;
+      s.attempts[target] = (s.attempts[target] || 0) + 1;
+      fb.classList.remove("hidden");
+      fb.className = "spell-feedback fb-no";
+      if (s.attempts[target] >= 5) {
+        // 5 次都没拼对，本题放过，计入"完成"
+        s.done[target] = 1;
+        $("#spellInput").classList.add("wrong");
+        $("#spellInput").disabled = true;
+        $("#btnSpellCheck").textContent = "下一题 →";
+        $("#btnSpellCheck").className = "btn btn-primary";
+        fb.innerHTML = "✗ 5 次都没拼对，跳过本词<br><span class='fb-answer'>正确答案：" + esc(target) + "</span>";
+        s.checked = true;
+        var done2 = spellDoneCount();
+        $("#spellProgressText").textContent = done2 + "/" + s.queue.length;
+        $("#spellProgressBar").style.width = (s.queue.length ? done2 / s.queue.length * 100 : 0) + "%";
+      } else {
+        // 错的！要让用户拼对为止，清空输入框并提示首字母
+        $("#spellInput").classList.remove("wrong");
+        $("#spellInput").value = "";
+        $("#spellInput").focus();
+        fb.innerHTML = "✗ 拼错了，请再试一次（第 " + s.attempts[target] + " 次 / 共 5 次）<br>" +
+          "<span class='fb-answer'>首字母：" + esc(target.charAt(0).toUpperCase()) + "</span>";
+        $("#btnSpellCheck").textContent = "再检查";
+      }
+    }
   }
 
   function spellNext() {
@@ -1068,13 +1274,14 @@
 
   function spellFinish() {
     var s = spell;
-    var rate = s.queue.length ? Math.round(s.correct / s.queue.length * 100) : 0;
+    var passRate = s.queue.length ? Math.round(spellDoneCount() / s.queue.length * 100) : 0;
     spell = null;
     $("#spellCard").classList.add("hidden");
     $("#studyHome").classList.remove("hidden");
     refreshStudyHome();
-    showStudySummary("拼写正确率 " + rate + "%",
-      "正确 " + s.correct + " · 错误 " + s.wrong + " · 共 " + s.queue.length + " 词");
+    showStudySummary("拼写完成 " + passRate + "%",
+      "首次拼对 " + (s.correctFirstTry || 0) + " · 共 " + s.queue.length + " 词 · 尝试 " +
+      (s.correct + s.wrong) + " 次");
     refreshList(); refreshStats();
   }
 
@@ -1094,10 +1301,10 @@
       if (r.next_review && r.next_review <= today) due += 1;
       else if (r.status === "NEW") nw += 1;
     });
-    var total = Math.min(due + nw, due + state.settings.newQuota);
+    var total = due + nw;  // 每日数量不限制
     $("#taskNum").textContent = total;
-    $("#taskDetail").textContent = "到期复习 " + due + " · 新词 " +
-      Math.min(nw, state.settings.newQuota);
+    $("#taskDetail").textContent = "到期复习 " + due + " · 新词 " + nw +
+      (total > 10 ? "（每 10 词一组）" : "");
     if (total === 0) $("#btnStartStudy").textContent = "今日已完成，休息一下吧";
     else $("#btnStartStudy").textContent = "开始学习";
     // 外刊阈值提示

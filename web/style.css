@@ -568,3 +568,15 @@ input, textarea, select { font-family: var(--sans); }
 .sync-btns { flex-wrap: wrap; gap: 8px; }
 .sync-btns .btn { font-size: 13px; padding: 8px 14px; }
 .sync-status { font-size: 13px; min-height: 18px; margin: 6px 0 0; word-break: break-all; }
+
+/* ---------- v1.4 学习体验优化 ---------- */
+.study-batch { color: var(--muted); font-size: 12px; margin-left: 8px; }
+.no-phonetic { opacity: .55; font-style: italic; }
+.card-back-phonetic {
+  font-size: 13px; color: var(--muted); font-weight: 500; flex: 1;
+  display: inline-flex; align-items: center;
+}
+.card-back-phonetic.no-phonetic { font-style: italic; opacity: .55; }
+.quiz-feedback { font-size: 14px; padding: 10px 12px; border-radius: 8px; margin: 12px 0; }
+.quiz-feedback.ok { background: #E8F5F1; color: #0F766E; }
+.quiz-feedback.no { background: #FCEDEA; color: #C0392B; }

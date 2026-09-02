@@ -33,18 +33,24 @@
         <button class="btn btn-spell-home" id="btnSpellHome">拼写巩固 · 看中文拼英文</button>
       </div>
       <div id="studyCard" class="study-card hidden">
-        <div class="study-progress"><span id="studyProgressText"></span><div class="bar"><div class="bar-fill" id="studyProgressBar"></div></div></div>
+        <div class="study-progress">
+          <span id="studyProgressText"></span>
+          <span id="studyBatchText" class="study-batch"></span>
+          <div class="bar"><div class="bar-fill" id="studyProgressBar"></div></div>
+        </div>
         <div class="word-card flip-card" id="wordCard">
           <div class="card-inner">
             <div class="card-face card-front">
               <div class="word-word" id="cardWord"></div>
               <div class="word-phonetic" id="cardPhonetic"></div>
               <button class="speak-btn" id="cardSpeakBtn" data-w="" title="朗读单词" aria-label="朗读单词"><svg viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18 6a8.5 8.5 0 0 1 0 12"/></svg></button>
-              <div class="flip-hint">点击卡片翻开</div>
+              <div class="flip-hint">点击卡片翻开（可点 🔊 听发音）</div>
             </div>
             <div class="card-face card-back">
               <div class="card-back-head">
                 <span class="card-back-word" id="cardBackWord"></span>
+                <span class="card-back-phonetic" id="cardBackPhonetic"></span>
+                <button class="speak-btn" id="cardBackSpeakBtn" data-w="" title="朗读单词" aria-label="朗读单词"><svg viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18 6a8.5 8.5 0 0 1 0 12"/></svg></button>
                 <span class="stars" id="cardStars"></span>
               </div>
               <div class="card-sec"><div class="sec-title">词义</div><div class="sec-body" id="cardTrans"></div></div>
@@ -66,9 +72,9 @@
           <button class="btn btn-primary btn-big hidden" id="btnQuizNext">下一题 →</button>
         </div>
         <div class="grade-row hidden" id="gradeRow">
-          <button class="btn btn-grade grade-know" data-grade="know">认识 ✓</button>
-          <button class="btn btn-grade grade-fuzzy" data-grade="fuzzy">模糊 ⁇</button>
           <button class="btn btn-grade grade-unknown" data-grade="unknown">不认识 ✗</button>
+          <button class="btn btn-grade grade-fuzzy" data-grade="fuzzy">模糊 ⁇</button>
+          <button class="btn btn-grade grade-know" data-grade="know">认识 ✓</button>
         </div>
         <div class="study-actions">
           <button class="btn btn-ghost" id="btnStopStudy">退出学习</button>
